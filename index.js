@@ -19,23 +19,23 @@ const client = new MongoClient(MONGO_URI);
 let collection;
 
 client.connect().then(() => {
-  const db = client.db("resumeDB");
-  collection = db.collection("resumes");
-  console.log("MongoDB connected");
+    const db = client.db("resumeDB");
+    collection = db.collection("resumes");
+    console.log("MongoDB connected");
 }).catch(console.error);
 
 app.post("/analyze", upload.single("resume"), async (req, res) => {
-  try {
-    const { jobDescription } = req.body;
-    const pdfData = await pdfParse(req.file.buffer);
-    const resumeText = pdfData.text;
+    try {
+        const { jobDescription } = req.body;
+        const pdfData = await pdfParse(req.file.buffer);
+        const resumeText = pdfData.text;
 
-    await collection.insertOne({
-      text: resumeText,
-      uploadedAt: new Date(),
-    });
+        await collection.insertOne({
+            text: resumeText,
+            uploadedAt: new Date(),
+        });
 
-    const prompt = \`
+        const prompt = `
 Compare the following resume and job description. Provide:
 1. A match score (0-100).
 2. Key strengths from the resume.
@@ -43,34 +43,34 @@ Compare the following resume and job description. Provide:
 4. Suggestions for improvement.
 
 Resume:
-\${resumeText}
+${resumeText}
 
 Job Description:
-\${jobDescription}
-\`;
+${jobDescription}
+`;
 
-    const geminiRes = await axios.post(
-      \`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyC438_5bIi-hKYjviIYua_MkIZq3C4o1iI\`,
-      {
-        contents: [{ parts: [{ text: prompt }] }],
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+        const geminiRes = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyC438_5bIi-hKYjviIYua_MkIZq3C4o1iI`,
+            {
+                contents: [{ parts: [{ text: prompt }] }],
+            },
+            {
+                headers: { "Content-Type": "application/json" },
+            }
+        );
 
-    const result = geminiRes.data.candidates[0].content.parts[0].text;
-    res.json({ result });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ result: "Error analyzing resume." });
-  }
+        const result = geminiRes.data.candidates[0].content.parts[0].text;
+        res.json({ result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ result: "Error analyzing resume." });
+    }
 });
 
 app.get("/", (req, res) => {
-  res.send("Resume Matcher Backend is running");
+    res.send("Resume Matcher Backend is running");
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
